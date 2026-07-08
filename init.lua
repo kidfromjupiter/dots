@@ -4,10 +4,10 @@ vim.opt.showmatch = true
 vim.opt.ignorecase = true
 vim.opt.hlsearch = true
 vim.opt.incsearch = true
-vim.opt.tabstop = 4
-vim.opt.softtabstop = 4
+vim.opt.tabstop = 2
+vim.opt.softtabstop = 2
 vim.opt.expandtab = true
-vim.opt.shiftwidth = 4
+vim.opt.shiftwidth = 2
 vim.opt.autoindent = true
 vim.opt.number = true
 vim.opt.wildmode = { "longest", "list" }
@@ -62,6 +62,31 @@ vim.opt.rtp:prepend(lazypath)
 
 
 require("lazy").setup({
+
+  -- Python LSP
+  {
+    "mason-org/mason.nvim",
+    opts = {},
+  },
+
+  {
+    "mason-org/mason-lspconfig.nvim",
+    dependencies = {
+      "mason-org/mason.nvim",
+      "neovim/nvim-lspconfig",
+    },
+    opts = {
+      ensure_installed = {
+        "pyright",
+        "ruff",
+        "ts_ls",        -- TypeScript / JavaScript
+        "tailwindcss",  -- Tailwind CSS
+        "eslint",       -- ESLint for Next.js linting/formatting
+        "cssls",        -- CSS language server
+      },
+      automatic_enable = false,
+    },
+  },
   -- LSP base
   {
     "neovim/nvim-lspconfig",
@@ -85,7 +110,14 @@ require("lazy").setup({
           defaults = {
             file_sorter = require("telescope.sorters").get_fzy_sorter,
             generic_sorter = require("telescope.sorters").get_fzy_sorter,
-
+            mappings = {
+              i = {
+                  ["<c-d>"] = require('telescope.actions').delete_buffer,
+              },
+              n = {
+                  ["<c-d>"] = require('telescope.actions').delete_buffer,
+              },
+            },
             preview = {
               treesitter = false,
             },
@@ -112,19 +144,77 @@ require("lazy").setup({
       "hrsh7th/cmp-buffer",
       "hrsh7th/cmp-path",
     },
+    config = function()
+      local cmp = require("cmp")
+
+      cmp.setup({
+        -- Configure how the completion menu behaves
+        mapping = cmp.mapping.preset.insert({
+          ["<C-b>"] = cmp.mapping.scroll_docs(-4),
+          ["<C-f>"] = cmp.mapping.scroll_docs(4),
+          ["<C-Space>"] = cmp.mapping.complete(), -- Trigger completion manually
+          ["<C-e>"] = cmp.mapping.abort(),
+          ["<CR>"] = cmp.mapping.confirm({ select = true }), -- Accept current selection
+          
+          -- Tab navigation through the completion menu
+          ["<Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_next_item()
+            else
+              fallback()
+            end
+          end, { "i", "s" }),
+          ["<S-Tab>"] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            else
+              fallback()
+            end
+          end, { "i", "s" }),
+        }),
+
+        -- Tell nvim-cmp where to fetch completion items from
+        sources = cmp.config.sources({
+          { name = "nvim_lsp" }, -- LSP suggestions (clangd, pyright, etc.)
+          { name = "path" },     -- File system paths
+        }, {
+          { name = "buffer" },   -- Text from current buffer
+        }),
+      })
+    end,
   },
   -- Treesitter
-    {
-      "nvim-treesitter/nvim-treesitter",
-      build = ":TSUpdate",
-      config = function()
-        require("nvim-treesitter").setup({
-          -- List of languages you want parsers for
-          ensure_installed = { "lua", "python", "javascript", "c", "rust", "cpp" }, -- add languages you use
-          auto_install = true, -- automatically install missing parsers when opening a file
-        })
-      end,
-    },
+  {
+    "nvim-treesitter/nvim-treesitter",
+    branch = "master",
+    lazy = false,
+    build = ":TSUpdate",
+    config = function()
+      require("nvim-treesitter.configs").setup({
+        ensure_installed = {
+          "lua",
+          "python",
+          "javascript",
+          "typescript",
+          "tsx",
+          "html",
+          "css",
+          "c",
+          "cpp",
+          "rust",
+          "qmljs"
+        },
+        auto_install = true,
+        highlight = {
+          enable = true,
+          additional_vim_regex_highlighting = false,
+        },
+        indent = {
+          enable = true,
+        },
+      })
+    end,
+  },
  -- Theme
   {
     "folke/tokyonight.nvim",
@@ -147,32 +237,93 @@ require("lazy").setup({
     end,
   },
   {
-    "tpope/vim-fugitive",
-    cmd = {
-      "Git",
-      "G",
-      "Gdiffsplit",
-      "Gvdiffsplit",
-      "Gread",
-      "Gwrite",
-      "Ggrep",
-      "GMove",
-      "GRename",
-      "GDelete",
-      "GRemove",
-      "GBrowse",
+    'rhysd/vim-clang-format',
+  },
+  {
+    "3rd/image.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
     },
-    keys = {
-      { "<leader>gs", "<cmd>Git<cr>", desc = "Git status" },
-      { "<leader>gd", "<cmd>Gvdiffsplit<cr>", desc = "Git diff" },
+    opts = {
+      backend = "kitty",
+      integrations = {
+        markdown = {
+          enabled = true,
+        },
+        neorg = {
+          enabled = true,
+        },
+      },
+      max_height_window_percentage = 95,
+      max_width_window_percentage = 95,
     },
   },
+  {
+    "lewis6991/gitsigns.nvim",
+    event = { "BufReadPre", "BufNewFile" },
+    opts = {
+      signs = {
+        add          = { text = "│" },
+        change       = { text = "│" },
+        delete       = { text = "_" },
+        topdelete    = { text = "‾" },
+        changedelete = { text = "~" },
+        untracked    = { text = "┆" },
+      },
+  
+      signcolumn = true, -- shows signs in the left gutter
+      numhl = true,      -- highlights line numbers for changed lines
+      linehl = false,    -- set true if you want whole-line highlight
+      word_diff = false, -- toggle when needed
+  
+      on_attach = function(bufnr)
+        local gs = require("gitsigns")
+  
+        vim.keymap.set("n", "]c", function()
+          if vim.wo.diff then
+            vim.cmd.normal({ "]c", bang = true })
+          else
+            gs.nav_hunk("next")
+          end
+        end, { buffer = bufnr })
+  
+        vim.keymap.set("n", "[c", function()
+          if vim.wo.diff then
+            vim.cmd.normal({ "[c", bang = true })
+          else
+            gs.nav_hunk("prev")
+          end
+        end, { buffer = bufnr })
+  
+        vim.keymap.set("n", "<leader>gp", gs.preview_hunk, { buffer = bufnr })
+        vim.keymap.set("n", "<leader>gi", gs.preview_hunk_inline, { buffer = bufnr })
+        vim.keymap.set("n", "<leader>gb", gs.blame_line, { buffer = bufnr })
+  
+        vim.keymap.set("n", "<leader>tw", gs.toggle_word_diff, { buffer = bufnr })
+        vim.keymap.set("n", "<leader>tl", gs.toggle_linehl, { buffer = bufnr })
+        vim.keymap.set("n", "<leader>tn", gs.toggle_numhl, { buffer = bufnr })
+        vim.keymap.set("n", "<leader>ts", gs.toggle_signs, { buffer = bufnr })
+      end,
+    },
+  }
 })
 
 -- ========================
--- LSP: clangd + pyright
+-- LSP: clangd + pyright + ruff
 -- ========================
+
 local capabilities = require("cmp_nvim_lsp").default_capabilities()
+
+vim.lsp.config("qmlls", {
+  cmd = { "/usr/bin/qmlls" }, -- Full system path to the QML Language Server
+  filetypes = { "qml" },
+  root_markers = {
+    "BUILD", -- Captures your Bazel environment root
+    "resources.qrc",
+    ".git",
+  },
+  capabilities = capabilities,
+})
 
 vim.lsp.config("clangd", {
   cmd = { "clangd", "--background-index" },
@@ -184,21 +335,67 @@ vim.lsp.config("clangd", {
   },
   capabilities = capabilities,
 })
-vim.lsp.enable("clangd")
 
 vim.lsp.config("pyright", {
   capabilities = capabilities,
   settings = {
+    pyright = {
+      disableOrganizeImports = true,
+    },
     python = {
       analysis = {
-        typeCheckingMode = "basic",
+        extraPaths = {
+          "/usr/lib/python3.14/site-packages",
+          "/usr/lib64/python3.14/site-packages",
+        },
+        typeCheckingMode = "off",
         autoSearchPaths = true,
         useLibraryCodeForTypes = true,
+        diagnosticMode = "workspace",
       },
     },
   },
 })
-vim.lsp.enable("pyright")
+
+vim.lsp.config("ruff", {
+  capabilities = capabilities,
+})
+
+vim.lsp.config("ts_ls", {
+  capabilities = capabilities,
+  filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
+  root_markers = { "tsconfig.json", "package.json", "jsconfig.json", ".git" },
+})
+
+vim.lsp.config("tailwindcss", {
+  capabilities = capabilities,
+  filetypes = { "html", "css", "javascriptreact", "typescriptreact" },
+  root_markers = { "tailwind.config.js", "tailwind.config.ts", "postcss.config.js", "package.json" },
+})
+
+vim.lsp.config("eslint", {
+  capabilities = capabilities,
+  filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
+  root_markers = { ".eslintrc.json", "eslint.config.js", "package.json" },
+})
+
+vim.lsp.config("cssls", {
+  capabilities = capabilities,
+  filetypes = { "css", "scss", "less" },
+  root_markers = { "package.json", ".git" },
+})
+
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(args)
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    if client and client.name == "ruff" then
+      client.server_capabilities.hoverProvider = false
+    end
+  end,
+})
+
+vim.lsp.enable({ "clangd", "pyright", "ruff", "qmlls", "ts_ls", "tailwindcss", "eslint", "cssls" })
+-------------------------------------
 
 vim.api.nvim_set_hl(0, 'LineNrAbove', { fg='#51B3EC' })
 vim.api.nvim_set_hl(0, 'LineNr', { fg='white', bold=true })      -- The current line number
@@ -224,3 +421,64 @@ vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Help tags' })
 vim.keymap.set("n", "<leader>tt", ":botright split | terminal<CR>", { desc = "Open terminal split" })
 vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "Go to definition" })
 vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, { desc = "Show diagnostic" })
+
+
+vim.keymap.set('n', '<S-Tab>', ':bprev<CR>')
+
+vim.keymap.set('n', '<leader>cf', '<cmd>ClangFormat<CR>')
+
+
+-- Ruff / LSP Keybindings
+vim.keymap.set("n", "<leader>rf", function()
+  vim.lsp.buf.format({ async = true })
+end, { desc = "Ruff/LSP Format file" })
+
+vim.keymap.set("n", "<leader>rx", function()
+  vim.lsp.buf.code_action({
+    context = { only = { "source.fixAll.ruff" } },
+    apply = true,
+  })
+end, { desc = "Ruff Fix all auto-fixable issues" })
+
+vim.keymap.set("n", "<leader>ri", function()
+  vim.lsp.buf.code_action({
+    context = { only = { "source.organizeImports.ruff" } },
+    apply = true,
+  })
+end, { desc = "Ruff Organize imports" })
+
+-- Automatically run Ruff formatting and fixes on save
+vim.api.nvim_create_autocmd("BufWritePre", {
+  pattern = "*.py",
+  callback = function()
+    -- 1. Organize imports using Ruff LSP
+    vim.lsp.buf.code_action({
+      context = { only = { "source.organizeImports.ruff" } },
+      apply = true,
+    })
+
+    -- 2. Run auto-fixes (like removing unused imports)
+    vim.lsp.buf.code_action({
+      context = { only = { "source.fixAll.ruff" } },
+      apply = true,
+    })
+
+    -- 3. Format the document
+    -- We use synchronous formatting (async = false) to guarantee it finishes before the write occurs
+    vim.lsp.buf.format({ async = false })
+  end,
+})
+--
+-- Add QML Format Keybinding
+vim.keymap.set('n', '<leader>qf', function()
+  local file = vim.api.nvim_buf_get_name(0)
+  vim.fn.jobstart({ "/usr/bin/qmlformat-qt6", "-i", file }, {
+    on_exit = function(_, exit_code)
+      if exit_code == 0 then
+        vim.cmd("edit!") -- Reload the buffer silently to show the changes
+      else
+        print("qmlformat failed")
+      end
+    end
+  })
+end, { desc = "Format QML file" })
