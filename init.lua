@@ -186,32 +186,49 @@ require("lazy").setup({
   -- Treesitter
   {
     "nvim-treesitter/nvim-treesitter",
-    branch = "master",
+    branch = "main",
     lazy = false,
     build = ":TSUpdate",
+  
     config = function()
-      require("nvim-treesitter.configs").setup({
-        ensure_installed = {
+      local parsers = {
+        "lua",
+        "python",
+        "javascript",
+        "typescript",
+        "tsx",
+        "html",
+        "css",
+        "c",
+        "cpp",
+        "rust",
+        "qmljs",
+      }
+  
+      -- Install missing parsers
+      require("nvim-treesitter").install(parsers)
+  
+      -- Enable Tree-sitter highlighting
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = {
           "lua",
           "python",
           "javascript",
           "typescript",
-          "tsx",
+          "typescriptreact",
+          "javascriptreact",
           "html",
           "css",
           "c",
           "cpp",
           "rust",
-          "qmljs"
+          "qml",
         },
-        auto_install = true,
-        highlight = {
-          enable = true,
-          additional_vim_regex_highlighting = false,
-        },
-        indent = {
-          enable = true,
-        },
+        callback = function()
+          vim.treesitter.start()
+          vim.bo.indentexpr =
+            "v:lua.require'nvim-treesitter'.indentexpr()"
+        end,
       })
     end,
   },
@@ -362,6 +379,7 @@ vim.lsp.config("ruff", {
 })
 
 vim.lsp.config("ts_ls", {
+  cmd = { "typescript-language-server", "--stdio" },
   capabilities = capabilities,
   filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
   root_markers = { "tsconfig.json", "package.json", "jsconfig.json", ".git" },
@@ -407,6 +425,8 @@ vim.keymap.set("n", "<C-h>", "<C-w>h")
 vim.keymap.set("n", "<C-j>", "<C-w>j")
 vim.keymap.set("n", "<C-k>", "<C-w>k")
 vim.keymap.set("n", "<C-l>", "<C-w>l")
+
+vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { noremap = true })
 
 
 -- telescope kb
