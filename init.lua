@@ -202,7 +202,8 @@ require("lazy").setup({
           "c",
           "cpp",
           "rust",
-          "qmljs"
+          "qmljs",
+          "sql"
         },
         auto_install = true,
         highlight = {
@@ -361,6 +362,10 @@ vim.lsp.config("ruff", {
   capabilities = capabilities,
 })
 
+vim.lsp.config("sql", {
+  capabilities = capabilities,
+})
+
 vim.lsp.config("ts_ls", {
   capabilities = capabilities,
   filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" },
@@ -394,7 +399,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
   end,
 })
 
-vim.lsp.enable({ "clangd", "pyright", "ruff", "qmlls", "ts_ls", "tailwindcss", "eslint", "cssls" })
+vim.lsp.enable({ "clangd", "pyright", "ruff", "qmlls", "ts_ls", "tailwindcss", "eslint", "cssls", "sql" })
 -------------------------------------
 
 vim.api.nvim_set_hl(0, 'LineNrAbove', { fg='#51B3EC' })
