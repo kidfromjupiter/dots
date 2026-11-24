@@ -330,6 +330,9 @@ require("lazy").setup({
   }
 })
 
+-- Fix for WSL
+vim.opt.rtp:append("/usr/lib/nvim")
+
 -- ========================
 -- LSP: clangd + pyright + ruff
 -- ========================
