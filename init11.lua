@@ -136,6 +136,23 @@ require("lazy").setup({
         telescope.load_extension("fzf")
       end,
     },
+   -- Marks
+  {
+    "chentoast/marks.nvim",
+    event = "VeryLazy",
+    opts = {},
+    config = function()
+      local marks = require("marks")
+
+      marks.setup({
+        default_mappings = true,
+      })
+
+      vim.keymap.set("n", "<leader>m", "<cmd>MarksListAll<CR><cmd>lopen<CR>", {
+        desc = "Show all marks",
+      })
+    end,
+  },
     -- Autocompletion
   {
     "hrsh7th/nvim-cmp",
@@ -203,6 +220,7 @@ require("lazy").setup({
         "cpp",
         "rust",
         "qmljs",
+        "sql",
       }
   
       -- Install missing parsers
@@ -223,6 +241,7 @@ require("lazy").setup({
           "cpp",
           "rust",
           "qml",
+          "sql",
         },
         callback = function()
           vim.treesitter.start()
@@ -232,6 +251,15 @@ require("lazy").setup({
       })
     end,
   },
+{
+  "nvim-treesitter/nvim-treesitter-context",
+  opts = {
+    enable = true,
+    max_lines = 3,
+    multiline_threshold = 3,
+    mode = "cursor",
+  },
+},
  -- Theme
   {
     "folke/tokyonight.nvim",
@@ -378,6 +406,10 @@ vim.lsp.config("ruff", {
   capabilities = capabilities,
 })
 
+vim.lsp.config("sql", {
+  capabilities = capabilities,
+})
+
 vim.lsp.config("ts_ls", {
   cmd = { "typescript-language-server", "--stdio" },
   capabilities = capabilities,
@@ -412,7 +444,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
   end,
 })
 
-vim.lsp.enable({ "clangd", "pyright", "ruff", "qmlls", "ts_ls", "tailwindcss", "eslint", "cssls" })
+vim.lsp.enable({ "clangd", "pyright", "ruff", "qmlls", "ts_ls", "tailwindcss", "eslint", "cssls", "sql" })
 -------------------------------------
 
 vim.api.nvim_set_hl(0, 'LineNrAbove', { fg='#51B3EC' })
@@ -437,13 +469,14 @@ vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Find files' })
 vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Live grep' })
 vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Buffers' })
 vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Help tags' })
+vim.keymap.set("n", "<leader>/", builtin.current_buffer_fuzzy_find)
 
 vim.keymap.set("n", "<leader>tt", ":botright split | terminal<CR>", { desc = "Open terminal split" })
 vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "Go to definition" })
 vim.keymap.set("n", "<leader>d", vim.diagnostic.open_float, { desc = "Show diagnostic" })
 
 
-vim.keymap.set('n', '<S-Tab>', ':bprev<CR>')
+vim.keymap.set('n', '<S-Tab>', '<cmd>buffer #<CR>')
 
 vim.keymap.set('n', '<leader>cf', '<cmd>ClangFormat<CR>')
 
